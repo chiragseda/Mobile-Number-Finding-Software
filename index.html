@@ -62,6 +62,12 @@
     button:hover {
       background-color: #5bc0a9;
     }
+    .button-group {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
     .output {
       text-align: left;
       margin-top: 1.5rem;
@@ -91,13 +97,15 @@
     <h1>Mobile Number Validator</h1>
     <p>Enter your mobile number to check if it passes all validations.</p>
     <input type="text" id="mobileNumber" placeholder="e.g. 9917033944" />
-    <br>
-    <button id="validateBtn">Validate Number</button>
-
+    <div class="button-group">
+      <button id="validateBtn">Validate Number</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+  
     <div id="result" class="output"></div>
     <div id="detailedReasons" class="output"></div>
   </div>
-
+  
   <script>
     // FRONT CHECK
     function frontCheck(numStr) {
@@ -195,7 +203,7 @@
           valid = false;
         }
   
-        // Allowed pairs with messages (they do not change valid)
+        // Allowed pairs with messages (they do not change overall validity)
         if (rajyog.has(pair)) {
           messages.push(pair + " -> Rajyog.");
         } else if (study.has(pair)) {
@@ -210,7 +218,6 @@
           if (pair === "56" || pair === "65") {
             messages.push(pair + " -> Warning: As money lender, you should stop and don't take this number.");
           }
-          // Otherwise, no message for other neutral pairs.
         }
       }
   
@@ -243,7 +250,7 @@
             valid = false;
           }
   
-          // For {2,7,9}: check consecutive but skip if this is the first two digits (i.e. index 1)
+          // For {2,7,9}: check consecutive but skip if this pair is the first two digits (i.e. index 1)
           if ((digit === 2 || digit === 7 || digit === 9) &&
               digit === prevDigit && i !== 1) {
             messages.push("Digits {2,7,9} cannot come consecutively.");
@@ -281,7 +288,6 @@
   
     // SUM OF NUMBER (digital sum)
     function sumOfNumber(n) {
-      // n is expected as a number
       let sum = 0;
       while (n > 0) {
         sum += n % 10;
@@ -303,12 +309,12 @@
         return;
       }
   
-      // Flags from each check
+      // Flags from each check.
       const frontRes = frontCheck(numberStr);
       const lastRes  = lastCheck(numberStr);
       const indivRes = individualCount(numberStr);
   
-      // Perform the sum logic: execute sumOfNumber 3 times
+      // Perform the sum logic: apply sumOfNumber three times.
       let numericVal = Number(numberStr);
       let s = sumOfNumber(sumOfNumber(sumOfNumber(numericVal)));
       let flag4 = true;
@@ -322,7 +328,7 @@
         flag4 = false;
       }
   
-      // Combine all flags
+      // Overall validity.
       const overallValid = frontRes.valid && lastRes.valid && indivRes.valid && flag4;
   
       let outHTML = "";
@@ -332,7 +338,6 @@
         outHTML += '<span class="error">This number fails checks so it cannot be used.</span>';
       }
   
-      // Display overall result and detailed reasons gathered from all checks.
       resultDiv.innerHTML = outHTML + "<br><br>" + sumMsg;
   
       const allReasons = [];
@@ -348,7 +353,6 @@
         allReasons.push("<strong>Individual Count Check:</strong>");
         indivRes.reasons.forEach(r => allReasons.push(r));
       }
-      // Add sumOfNumber message if needed.
       if (!flag4) {
         allReasons.push("<strong>Sum Check:</strong> The resulting sum (" + s + ") is not acceptable.");
       }
@@ -362,6 +366,13 @@
         });
         detailsDiv.appendChild(ul);
       }
+    });
+  
+    // RESET button: Clear the input and results.
+    document.getElementById("resetBtn").addEventListener("click", function () {
+      document.getElementById("mobileNumber").value = "";
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("detailedReasons").innerHTML = "";
     });
   </script>
 </body>

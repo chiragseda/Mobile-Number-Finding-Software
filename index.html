@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Number Validator Dashboard</title>
+  <style>
+    /* Reset & base styles */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: #fff;
+      border-radius: 10px;
+      padding: 2rem 2.5rem;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    p {
+      color: #555;
+      margin-bottom: 1.5rem;
+    }
+    input[type="text"] {
+      width: 80%;
+      padding: 0.75rem;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+    input[type="text"]:focus {
+      border-color: #74ebd5;
+      outline: none;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      background-color: #74ebd5;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #5bc0a9;
+    }
+    .output {
+      text-align: left;
+      margin-top: 1.5rem;
+      background: #f0f4f7;
+      padding: 1rem;
+      border-radius: 5px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    ul {
+      margin-top: 0.5rem;
+      list-style-type: disc;
+      margin-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Mobile Number Validator</h1>
+    <p>Enter your mobile number to check if it passes all validations.</p>
+    <input type="text" id="mobileNumber" placeholder="e.g. 9917033944" />
+    <br>
+    <button id="validateBtn">Validate Number</button>
+
+    <div id="result" class="output"></div>
+    <div id="detailedReasons" class="output"></div>
+  </div>
+
+  <script>
+    // FRONT CHECK
+    function frontCheck(numStr) {
+      const messages = [];
+      let valid = true;
+  
+      if (numStr.length < 2) {
+        messages.push("Number must have at least 2 digits.");
+        return { valid: false, reasons: messages };
+      }
+  
+      const firstTwo = numStr.substring(0, 2);
+      const allowedPrefixes = [
+        "63", "65", "66", "69", "71", "73", "74", "75",
+        "78", "79", "83", "85", "87", "89", "91", "93",
+        "94", "95", "96", "97", "99"
+      ];
+  
+      // Special treatment for numbers starting with "98"
+      if (firstTwo === "98") {
+        if (numStr.length < 3) {
+          messages.push("Number starting with 98 must have a third digit.");
+          valid = false;
+        } else {
+          const third = numStr.charAt(2);
+          if (["1", "2", "4"].includes(third)) {
+            messages.push("If number starts with 98, the third digit must not be 1, 2, or 4.");
+            valid = false;
+          }
+        }
+        return { valid: valid, reasons: messages };
+      }
+  
+      // Otherwise, verify if the first two digits match any allowed prefix
+      if (!allowedPrefixes.includes(firstTwo)) {
+        messages.push("Front check failed: the first two digits must be one of " +
+                      allowedPrefixes.join(", ") + " (or '98' with proper conditions).");
+        valid = false;
+      }
+  
+      return { valid: valid, reasons: messages };
+    }
+  
+    // LAST CHECK
+    function lastCheck(numStr) {
+      const messages = [];
+      let valid = true;
+  
+      if (numStr.length < 10) {
+        messages.push("Number must have at least 10 digits (for last check).");
+        return { valid: false, reasons: messages };
+      }
+  
+      // Extract last eight digits
+      const last8 = numStr.substring(numStr.length - 8);
+  
+      // Define disallowed pairs with their reasons
+      const badHealth = new Set(["14", "41", "26", "62", "27", "72", "28", "82", "34", "43", "46", "64", "48", "84", "68", "86"]);
+      const spouseHealth = new Set(["16", "61", "18", "81", "67", "76"]);
+      const maleChildProblems = new Set(["23", "32"]);
+      const courtHealth = new Set(["45", "54"]);
+      const leaveParentalHome = new Set(["35", "53"]);
+  
+      // Allowed pairs with special messages (will not flag false)
+      const rajyog = new Set(["37", "73"]);
+      const study = new Set(["13", "31"]);
+      const hathMsg = new Set(["25", "52"]);
+      const easyMoney = new Set(["29", "92"]);
+      const businessGrowth = new Set(["57", "75", "15", "51"]);
+      // Neutral pairs (one special notice for "56"/"65")
+      const neutral = new Set(["17", "71", "19", "91", "36", "63", "39", "93", "56", "65", "58", "85", "59", "95", "79", "97"]);
+  
+      // Process the four two-digit pairs (nonoverlapping)
+      for (let i = 0; i < 4; i++) {
+        const pair = last8.substring(i * 2, i * 2 + 2);
+  
+        if (badHealth.has(pair)) {
+          messages.push(pair + " indicates bad health.");
+          valid = false;
+        }
+        if (spouseHealth.has(pair)) {
+          messages.push(pair + " indicates spouse health issues.");
+          valid = false;
+        }
+        if (maleChildProblems.has(pair)) {
+          messages.push(pair + " indicates male child problems.");
+          valid = false;
+        }
+        if (courtHealth.has(pair)) {
+          messages.push(pair + " indicates frequent court/hospital visits.");
+          valid = false;
+        }
+        if (leaveParentalHome.has(pair)) {
+          messages.push(pair + " indicates leaving parental home.");
+          valid = false;
+        }
+  
+        // Allowed pairs with messages (they do not change valid)
+        if (rajyog.has(pair)) {
+          messages.push(pair + " -> Rajyog.");
+        } else if (study.has(pair)) {
+          messages.push(pair + " -> For study, these numbers are good.");
+        } else if (hathMsg.has(pair)) {
+          messages.push(pair + " -> Hath me Shafa.");
+        } else if (easyMoney.has(pair)) {
+          messages.push(pair + " -> It's easy Money.");
+        } else if (businessGrowth.has(pair)) {
+          messages.push(pair + " -> Good for business growth.");
+        } else if (neutral.has(pair)) {
+          if (pair === "56" || pair === "65") {
+            messages.push(pair + " -> Warning: As money lender, you should stop and don't take this number.");
+          }
+          // Otherwise, no message for other neutral pairs.
+        }
+      }
+  
+      return { valid: valid, reasons: messages };
+    }
+  
+    // INDIVIDUAL COUNT CHECK
+    function individualCount(numStr) {
+      const messages = [];
+      let valid = true;
+  
+      // Rule: The original number should NOT end with 0.
+      if (numStr.charAt(numStr.length - 1) === '0') {
+        messages.push("0 is not allowed at the end.");
+        valid = false;
+      }
+  
+      const digitCount = new Array(10).fill(0);
+      // Process each digit left-to-right.
+      for (let i = 0; i < numStr.length; i++) {
+        const digit = parseInt(numStr.charAt(i), 10);
+        digitCount[digit]++;
+  
+        if (i > 0) {
+          const prevDigit = parseInt(numStr.charAt(i - 1), 10);
+  
+          // For 0: always check consecutive
+          if (digit === 0 && digit === prevDigit) {
+            messages.push("0 cannot come consecutively.");
+            valid = false;
+          }
+  
+          // For {2,7,9}: check consecutive but skip if this is the first two digits (i.e. index 1)
+          if ((digit === 2 || digit === 7 || digit === 9) &&
+              digit === prevDigit && i !== 1) {
+            messages.push("Digits {2,7,9} cannot come consecutively.");
+            valid = false;
+          }
+        }
+      }
+  
+      // Rule 1: Digits {1,3,5,6} at most 3 times each.
+      if (digitCount[1] > 3 || digitCount[3] > 3 || digitCount[5] > 3 || digitCount[6] > 3) {
+        messages.push("{1,3,5,6} can appear at most 3 times each.");
+        valid = false;
+      }
+  
+      // Rule 2: Digits {2,7,9} at most 2 times.
+      if (digitCount[2] > 2 || digitCount[7] > 2 || digitCount[9] > 2) {
+        messages.push("{2,7,9} can appear at most 2 times each and not consecutively.");
+        valid = false;
+      }
+  
+      // Rule 3: Digits {4,8} only once.
+      if (digitCount[4] > 1 || digitCount[8] > 1) {
+        messages.push("{4,8} can appear only once each.");
+        valid = false;
+      }
+  
+      // Rule 4: Digit 0 appears at most 2 times.
+      if (digitCount[0] > 2) {
+        messages.push("0 can appear at most 2 times and not consecutively.");
+        valid = false;
+      }
+  
+      return { valid: valid, reasons: messages };
+    }
+  
+    // SUM OF NUMBER (digital sum)
+    function sumOfNumber(n) {
+      // n is expected as a number
+      let sum = 0;
+      while (n > 0) {
+        sum += n % 10;
+        n = Math.floor(n / 10);
+      }
+      return sum;
+    }
+  
+    // MAIN: validate all parts
+    document.getElementById("validateBtn").addEventListener("click", function () {
+      const resultDiv = document.getElementById("result");
+      const detailsDiv = document.getElementById("detailedReasons");
+      resultDiv.innerHTML = "";
+      detailsDiv.innerHTML = "";
+  
+      const numberStr = document.getElementById("mobileNumber").value.trim();
+      if (!/^\d+$/.test(numberStr)) {
+        resultDiv.innerHTML = '<span class="error">Please enter a valid number containing only digits.</span>';
+        return;
+      }
+  
+      // Flags from each check
+      const frontRes = frontCheck(numberStr);
+      const lastRes  = lastCheck(numberStr);
+      const indivRes = individualCount(numberStr);
+  
+      // Perform the sum logic: execute sumOfNumber 3 times
+      let numericVal = Number(numberStr);
+      let s = sumOfNumber(sumOfNumber(sumOfNumber(numericVal)));
+      let flag4 = true;
+      let sumMsg = "";
+      if (s === 1 || s === 5 || s === 6) {
+        sumMsg = "Total Sum of Numbers: " + s;
+      } else if (s === 3) {
+        sumMsg = "Total Sum of Numbers: " + s + " (This can be used but rarely)";
+      } else {
+        sumMsg = "Total Sum of Numbers: " + s;
+        flag4 = false;
+      }
+  
+      // Combine all flags
+      const overallValid = frontRes.valid && lastRes.valid && indivRes.valid && flag4;
+  
+      let outHTML = "";
+      if (overallValid) {
+        outHTML += '<span class="success">This number passes all the checks so can be used.</span>';
+      } else {
+        outHTML += '<span class="error">This number fails checks so it cannot be used.</span>';
+      }
+  
+      // Display overall result and detailed reasons gathered from all checks.
+      resultDiv.innerHTML = outHTML + "<br><br>" + sumMsg;
+  
+      const allReasons = [];
+      if (frontRes.reasons.length > 0) {
+        allReasons.push("<strong>Front Check:</strong>");
+        frontRes.reasons.forEach(r => allReasons.push(r));
+      }
+      if (lastRes.reasons.length > 0) {
+        allReasons.push("<strong>Last Check:</strong>");
+        lastRes.reasons.forEach(r => allReasons.push(r));
+      }
+      if (indivRes.reasons.length > 0) {
+        allReasons.push("<strong>Individual Count Check:</strong>");
+        indivRes.reasons.forEach(r => allReasons.push(r));
+      }
+      // Add sumOfNumber message if needed.
+      if (!flag4) {
+        allReasons.push("<strong>Sum Check:</strong> The resulting sum (" + s + ") is not acceptable.");
+      }
+  
+      if (allReasons.length > 0) {
+        const ul = document.createElement("ul");
+        allReasons.forEach(reason => {
+          const li = document.createElement("li");
+          li.innerHTML = reason;
+          ul.appendChild(li);
+        });
+        detailsDiv.appendChild(ul);
+      }
+    });
+  </script>
+</body>
+</html>
